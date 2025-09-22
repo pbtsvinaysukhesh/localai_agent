@@ -1,0 +1,16 @@
+langchain
+langchain-community
+ctransformers
+streamlit
+python-docx
+psutil
+langchainhub
+# --- New for Image Generation ---
+diffusers
+transformers
+accelerate
+torch
+stable-diffusion-cpp-python
+matplotlib
+
+# Consider 'invisible-watermark' if diffusers prompts for it
