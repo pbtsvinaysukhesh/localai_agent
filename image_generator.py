@@ -1,54 +1,48 @@
-# image_generator.py
 
 import os
-import random
-from stable_diffusion_cpp import StableDiffusion
-from config import IMAGE_MODEL_PATH, SD_CONFIG
+import torch
+from diffusers import StableDiffusion3Pipeline
+from config import IMAGE_MODEL_ID
 
 class LocalImageGenerator:
     def __init__(self, output_dir="output/images"):
         self.output_dir = output_dir
         if not os.path.exists(self.output_dir): os.makedirs(self.output_dir)
+        if not os.path.isdir(IMAGE_MODEL_ID):
+             raise FileNotFoundError(f"The local SD3 model directory was not found at: {IMAGE_MODEL_ID}.")
 
-        if not os.path.exists(IMAGE_MODEL_PATH):
-            raise FileNotFoundError(
-                f"On-device image model not found at {IMAGE_MODEL_PATH}. "
-                f"Please ensure '{IMAGE_MODEL_NAME}' is in the 'models' directory."
-            )
-        
+        # --- CHANGES FOR CPU ---
+        # 1. REMOVE the CUDA check
+        # if not torch.cuda.is_available():
+        #     raise RuntimeError("Image generation with SD3 requires a CUDA-enabled GPU.")
+
         self.pipeline = None
-        print("Initializing On-Device Image Generator...")
+        print(f"Initializing Diffusers Image Generator on CPU: {IMAGE_MODEL_ID}")
+        
         try:
-            self.pipeline = StableDiffusion(
-                model_path=IMAGE_MODEL_PATH,
-                wtype=SD_CONFIG["wtype"],
-                n_threads=SD_CONFIG["n_threads"],
+            self.pipeline = StableDiffusion3Pipeline.from_pretrained(
+                IMAGE_MODEL_ID,
+                # 2. CHANGE torch_dtype to float32, as float16 is poorly supported on CPU
+                torch_dtype=torch.float32 
             )
-            print("Image Model loaded successfully via stable-diffusion.cpp.")
+            # 3. DO NOT move the pipeline to "cuda"
+            # self.pipeline.to("cuda") 
+            print("Image Generator pipeline loaded to CPU successfully.")
         except Exception as e:
-            print(f"Failed to load the image generation model: {e}")
-            self.pipeline = None
-            raise e
+            print(f"Failed to load the diffusers model: {e}"); raise e
 
-    def generate(self, prompt: str, filename: str, width: int = None, height: int = None) -> str | None:
-        if self.pipeline is None: return None
-        print(f"Generating image ({width}x{height}) for prompt: '{prompt}'")
+    def generate(self, prompt: str, filename: str, width: int = 512, height: int = 512) -> str | None:
+        # Reduced default size for CPU       if self.pipeline is None: return None
+        print(f"Generating image on GPU for prompt: '{prompt}'")
         try:
-            img_width = width if width else SD_CONFIG["width"]
-            img_height = height if height else SD_CONFIG["height"]
-            images = self.pipeline.predict(
-                prompt=prompt,
-                seed=random.randint(0, 2**32 - 1),
-                n_steps=SD_CONFIG["n_steps"],
-                cfg_scale=SD_CONFIG["cfg_scale"],
-                width=img_width,
-                height=img_height,
-            )
-            image = images[0]
+            image = self.pipeline(
+                prompt, num_inference_steps=28, guidance_scale=7.0,
+                width=width, height=height
+            ).images[0]
+            
             filepath = os.path.join(self.output_dir, f"{filename}.png")
             image.save(filepath)
             print(f"Image saved to {filepath}")
             return filepath
         except Exception as e:
-            print(f"An error occurred during image generation: {e}")
-            return None
+            print(f"An error occurred during image generation: {e}"); return None

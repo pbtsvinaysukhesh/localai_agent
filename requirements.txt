@@ -1,16 +1,15 @@
-langchain
+streamlit
 langchain-community
 ctransformers
-streamlit
 python-docx
 psutil
-langchainhub
-# --- New for Image Generation ---
+matplotlib
+Pillow
+# --- GPU-Powered Dependencies for Stable Diffusion 3 ---
+torch
+torchvision
+torchaudio
 diffusers
 transformers
 accelerate
-torch
-stable-diffusion-cpp-python
-matplotlib
-
-# Consider 'invisible-watermark' if diffusers prompts for it
+safetensors

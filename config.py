@@ -1,33 +1,25 @@
+# config.py
 
 import os
 
+# --- PATHS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 OUTPUT_DIR = os.path.join(BASE_DIR, "output")
-
-# --- LOCAL LLM MODEL (for Text Generation) ---
-MODEL_NAME = "capybarahermes-2.5-mistral-7b.Q4_K_M.gguf"
-MODEL_TYPE = "mistral" # ctransformers needs this
-MODEL_PATH = os.path.join(MODELS_DIR, MODEL_NAME)
-
-# --- ON-DEVICE IMAGE MODEL (GGUF Format) ---
-# This now points to your desired GGUF image model
-IMAGE_MODEL_NAME = "sd3.5_large-Q4_0.gguf" # <-- YOUR CHOSEN MODEL
-IMAGE_MODEL_PATH = os.path.join(MODELS_DIR, IMAGE_MODEL_NAME)
-MAX_NEW_TOKENS_PER_SECTION = 8192
-
-
-
 CONTEXT_LENGTH = 1024
+# --- LOCAL LLM MODEL (YOUR GEMMA MODEL) ---
+MODEL_NAME = "phi-4-Q4_0.gguf"
+MODEL_PATH = os.path.join(MODELS_DIR, MODEL_NAME)
+#MODEL_TYPE = "phi" # This is critical for the ctransformers library
 
-SD_CONFIG = {
-    "n_threads": -1,
-    "wtype": "f16",
-    "n_steps": 20,
-    "cfg_scale": 7.0,
-    "width": 512,
-    "height": 512,
-}
+# --- ON-DEVICE IMAGE MODEL (SD3 - LOCAL PATH) ---
+# This points to the local folder you downloaded with 'git clone'.
+# This is NOT a single file, but the name of the directory.
+IMAGE_MODEL_ID = os.path.join(BASE_DIR, "stable-diffusion-3-medium-diffusers")
+
+# --- LLM GENERATION PARAMETERS ---
+# -1 allows the agent to write huge amounts of content without being cut off.
+MAX_NEW_TOKENS = -1
 
 # --- HARDWARE ACCELERATION CONFIGURATIONS (for LLM) ---
 CPU_CONFIG = {"gpu_layers": 0, "threads": -1}
