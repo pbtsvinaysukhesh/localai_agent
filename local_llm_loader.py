@@ -1,34 +1,13 @@
-# local_llm_loader.py
-
 import os
 from langchain_community.llms import CTransformers
 from config import (
-    MODEL_PATH, 
-    MODEL_NAME, # We now import MODEL_NAME to determine the type automatically
-    CPU_CONFIG, 
-    HYBRID_CONFIG, 
-    GPU_CONFIG
+    MODEL_PATH, MODEL_TYPE, CONTEXT_LENGTH,
+    CPU_CONFIG, HYBRID_CONFIG, GPU_CONFIG
 )
-
-def get_model_type_from_name(model_name: str) -> str:
-    """
-    Determines the model type from the filename.
-    """
-    name = model_name.lower()
-    if "mistral" in name or "mixtral" in name:
-        return "mistral"
-    elif "llama" in name:
-        return "llama2"
-    elif "zephyr" in name:
-        return "zephyr"
-    else:
-        print(f"Warning: Could not determine model type from name '{model_name}'. Falling back to 'mistral'.")
-        return "mistral"
 
 def load_local_llm(mode: str = "cpu"):
     """
-    Loads a local LLM, automatically detects its model type from the filename,
-    and automatically detects its maximum context length.
+    Loads a local LLM using CTransformers, with a specified context length.
     """
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(
@@ -36,10 +15,7 @@ def load_local_llm(mode: str = "cpu"):
             "Please download a GGUF model and place it in the 'models' directory."
         )
 
-    model_type = get_model_type_from_name(MODEL_NAME)
-    print(f"✅ Model name '{MODEL_NAME}' detected as type: '{model_type}'")
-
-    print(f"Loading LLM in '{mode.upper()}' mode...")
+    print(f"Loading LLM in '{mode.upper()}' mode with context length {CONTEXT_LENGTH}...")
     
     config_map = {
         "cpu": CPU_CONFIG,
@@ -53,19 +29,15 @@ def load_local_llm(mode: str = "cpu"):
 
     llm = CTransformers(
         model=MODEL_PATH,
-        model_type=model_type,
+        model_type=MODEL_TYPE,
+        # --- CHANGE APPLIED HERE ---
+        # We explicitly set the context_length and a default max_new_tokens.
         config={
             **config,
-            'max_new_tokens': -1 
+            'context_length': CONTEXT_LENGTH,
+            'max_new_tokens': 2048 # A generous default, can be overridden
         }
     )
     
     print("LLM loaded successfully.")
-
-    try:
-        detected_context_length = llm.client.context_length
-        print(f"✅ Model's maximum context length automatically detected: {detected_context_length} tokens.")
-    except Exception as e:
-        print(f"Warning: Could not automatically detect context length. Using a default. Error: {e}")
-    
     return llm
